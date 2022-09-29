@@ -352,3 +352,6 @@ MigrationBackup/
 # Sonar-related directories
 .scannerwork
 .sonarqube
+
+# Temp
+*.ps1
