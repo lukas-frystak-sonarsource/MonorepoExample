@@ -87,6 +87,13 @@ else {
     $SONAR_TOKEN = $SONARQUBE_TOKEN
 }
 
+if ($AnalysisDebugLog) {
+    $AnalysisDebugLogString = "true"
+}
+else {
+    $AnalysisDebugLogString = "false"
+}
+
 # .NET Analysis parameters
 $dotnetScannerParameterList = @(
     [AnalysisParameter]::new("SC", "--", "/o:lukas-frystak-sonarsource")
@@ -98,7 +105,7 @@ $dotnetScannerParameterList = @(
     [AnalysisParameter]::new("--", "--", "/v:1.0.0")
     [AnalysisParameter]::new("--", "--", "/d:sonar.cs.dotcover.reportsPaths=$coverageReportPath")
     [AnalysisParameter]::new("--", "--", "/d:sonar.cs.vstest.reportsPaths=$testReportPath")
-    [AnalysisParameter]::new("--", "--", "/d:sonar.verbose=$AnalysisDebugLog")
+    [AnalysisParameter]::new("--", "--", "/d:sonar.verbose=$AnalysisDebugLogString")
     [AnalysisParameter]::new("--", "BR", "/d:sonar.branch.name=$branchName")
     [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.key=$prId")
     [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.base=$prBaseBranch")
@@ -124,33 +131,33 @@ $cliScannerParameterList = @(
 )
 
 # Filter the analysis parameters
-if ($AnalyzeOnSonarCloud){
+if ($AnalyzeOnSonarCloud) {
     # Exclude parameters related to SonarQube
-    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.PlatformType -ne "SQ"}
-    $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.PlatformType -ne "SQ"}
-}
-else{
-    # Exclude parameters related to SonarCloud
-    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.PlatformType -ne "SC"}
-    $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.PlatformType -ne "SC"}
-}
-
-if($PR){
-    # Exclude only parameters related to Branch analysis
-    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -ne "BR"}
-    $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -ne "BR"}
+    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object { $_.PlatformType -ne "SQ" }
+    $cliScannerParameterList = $cliScannerParameterList | Where-Object { $_.PlatformType -ne "SQ" }
 }
 else {
-    if ($BR){
+    # Exclude parameters related to SonarCloud
+    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object { $_.PlatformType -ne "SC" }
+    $cliScannerParameterList = $cliScannerParameterList | Where-Object { $_.PlatformType -ne "SC" }
+}
+
+if ($PR) {
+    # Exclude only parameters related to Branch analysis
+    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object { $_.AnalysisType -ne "BR" }
+    $cliScannerParameterList = $cliScannerParameterList | Where-Object { $_.AnalysisType -ne "BR" }
+}
+else {
+    if ($BR) {
         # Exclude only parameters related to Pull Request analysis
-        $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -ne "PR"}
-        $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -ne "PR"}
+        $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object { $_.AnalysisType -ne "PR" }
+        $cliScannerParameterList = $cliScannerParameterList | Where-Object { $_.AnalysisType -ne "PR" }
     }
-    else{
+    else {
         # Exclude parameters related to branch analysis and pull request analysis
         # I.e., use only the generic parameters
-        $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -eq "--"}
-        $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -eq "--"}
+        $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object { $_.AnalysisType -eq "--" }
+        $cliScannerParameterList = $cliScannerParameterList | Where-Object { $_.AnalysisType -eq "--" }
     }
 }
 
@@ -159,19 +166,25 @@ else {
 ###
 
 # Prepare .NET analysis
-$dotnetScannerParameters = [string]::Join(' ', $dotnetScannerParameterList)
+$dotnetScannerParameters = [string]::Join(' ', $($dotnetScannerParameterList).Value)
 $beginCmd = "dotnet sonarscanner begin $dotnetScannerParameters"
 Invoke-Expression $beginCmd
 
 # .NET build and test
 dotnet build $SOLUTION --configuration Release
-dotnet dotcover test $solution --no-build --configuration Release --dcReportType=html --dcOutput=$coverageReportPath --logger trx
+dotnet dotcover test $SOLUTION --no-build --configuration Release --dcReportType=html --dcOutput=$coverageReportPath --logger trx
 
 
 # Run .NET analysis
 dotnet sonarscanner end /d:sonar.login=$SONAR_TOKEN
 
 # Analyze the Python project - SonarScanner CLI
-$cliScannerParameters = [string]::Join(' ', $cliScannerParameterList)
+$cliScannerParameters = [string]::Join(' ', $($cliScannerParameterList).Value)
+
+# Append debug flag in debug mode
+if ($AnalysisDebugLog){
+    $cliScannerParameters = "$cliScannerParameters -X"
+}
+
 $cliScannerCmd = "sonar-scanner $cliScannerParameters"
 Invoke-Expression $cliScannerCmd
