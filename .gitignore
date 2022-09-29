@@ -354,6 +354,4 @@ MigrationBackup/
 .sonarqube
 
 # Temp
-*.ps1
-LocalRunScript.ps1
 TestResults
