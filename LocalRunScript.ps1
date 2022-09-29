@@ -12,6 +12,9 @@ $dotnetScannerParameterList = @(
     "/d:sonar.host.url=$SONARQUBE_URL",
     "/d:sonar.login=$SONARQUBE_TOKEN",
     "/d:sonar.verbose=false"
+    "/d:sonar.pullrequest.key=2",
+    "/d:sonar.pullrequest.branch=lukas/test-pr",
+    "/d:sonar.pullrequest.base=main"
 )
 
 # CLI Analysis parameters
@@ -24,6 +27,9 @@ $cliScannerParameterList = @(
     "-D sonar.sources=./src",
     "-D sonar.exclusions=./src/MonorepoDotnetProject/**/*",
     "-D sonar.python.version=3"
+    "-D sonar.pullrequest.key=2",
+    "-D sonar.pullrequest.branch=lukas/test-pr",
+    "-D sonar.pullrequest.base=main"
 )
 
 #
