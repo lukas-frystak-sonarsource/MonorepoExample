@@ -11,15 +11,17 @@ $dotnetScannerParameterList = @(
     "/d:sonar.host.url=$SONARQUBE_URL",
     "/d:sonar.login=$SONARQUBE_TOKEN",
     "/d:sonar.verbose=false"
-    )
+)
     
-    $cliScannerParameterList = @(
-        "-D sonar.projectKey=MonorepoExample_PythonProject",
-        "-D sonar.projectName=""Monorepo Example: Python Project""",
-        "-D sonar.host.url=$SONARQUBE_URL",
-        "-D sonar.login=$SONARQUBE_TOKEN",
-        "-D sonar.sources=./src",
-        "-D sonar.source.exclusions=./src/MonorepoDotnetProject/**/*"
+$cliScannerParameterList = @(
+    "-D sonar.projectKey=MonorepoExample_PythonProject",
+    "-D sonar.projectName=""Monorepo Example: Python Project""",
+    "-D sonar.projectVersion=1.0.0"
+    "-D sonar.host.url=$SONARQUBE_URL",
+    "-D sonar.login=$SONARQUBE_TOKEN",
+    "-D sonar.sources=./src",
+    "-D sonar.exclusions=./src/MonorepoDotnetProject/**/*",
+    "-D sonar.python.version=3"
 )
 
 #
@@ -38,7 +40,6 @@ dotnet test './src/MonorepoDotnetProject/MonorepoDotnetProject.sln' --no-build
 
 # Run .NET analysis
 dotnet sonarscanner end /d:sonar.login=$SONARQUBE_TOKEN
-
 
 #
 # Analyze the Python project
