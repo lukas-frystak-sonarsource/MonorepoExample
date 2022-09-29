@@ -4,6 +4,7 @@
 $SONARQUBE_URL = [Environment]::GetEnvironmentVariable("SONARQUBE_URL")
 $SONARQUBE_TOKEN = [Environment]::GetEnvironmentVariable("SONARQUBE_TOKEN")
 
+# .NET Analysis parameters
 $dotnetScannerParameterList = @(
     "/key:MonorepoExample_DotnetProject",
     "/name:""Monorepo Example: .NET Project""",
@@ -12,7 +13,8 @@ $dotnetScannerParameterList = @(
     "/d:sonar.login=$SONARQUBE_TOKEN",
     "/d:sonar.verbose=false"
 )
-    
+
+# CLI Analysis parameters
 $cliScannerParameterList = @(
     "-D sonar.projectKey=MonorepoExample_PythonProject",
     "-D sonar.projectName=""Monorepo Example: Python Project""",
