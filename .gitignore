@@ -356,3 +356,4 @@ MigrationBackup/
 # Temp
 *.ps1
 LocalRunScript.ps1
+TestResults
