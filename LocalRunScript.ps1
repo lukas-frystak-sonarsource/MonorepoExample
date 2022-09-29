@@ -32,7 +32,7 @@ $dotnetScannerParameterList = @(
     #"/d:sonar.pullrequest.key=3",
     #"/d:sonar.pullrequest.branch=lukas/test-pr",
     #"/d:sonar.pullrequest.base=main"
-    "/d:sonar.branch.name=lukas/test-pr"
+    #"/d:sonar.branch.name=lukas/test-pr"
 )
 
 # CLI Analysis parameters
@@ -50,7 +50,7 @@ $cliScannerParameterList = @(
     #"-D sonar.pullrequest.key=3",
     #"-D sonar.pullrequest.branch=lukas/test-pr",
     #"-D sonar.pullrequest.base=main"
-    "-D sonar.branch.name=lukas/test-pr"
+    #"-D sonar.branch.name=lukas/test-pr"
 )
 
 #
