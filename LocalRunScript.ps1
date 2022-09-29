@@ -1,9 +1,44 @@
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [switch]
+    $AnalyzeOnSonarCloud = $false,
+
+    [Parameter()]
+    [switch]
+    $PR = $false,
+
+    [Parameter()]
+    [string]
+    $prId = [string]::Empty,
+
+    [Parameter()]
+    [string]
+    $prBaseBranch = [string]::Empty,
+
+    [Parameter()]
+    [switch]
+    $AnalysisDebugLog = $false
+)
+
+class AnalysisParameter {
+    [string]$PlatformType
+    [string]$AnalysisType
+    [string]$Value
+
+    AnalysisParameter([string]$pType, [string]$aType, [string]$val) {
+        $this.PlatformType = $pType
+        $this.AnalysisType = $aType
+        $this.Value = $val
+    }
+}
+
 # Powershell Config
 $ErrorActionPreference = "Stop"
 
-#
-# Constants
-#
+###
+### Constants
+###
 $SONARQUBE_URL = [Environment]::GetEnvironmentVariable("SONARQUBE_URL")
 $SONARQUBE_TOKEN = [Environment]::GetEnvironmentVariable("SONARQUBE_TOKEN")
 $SONARCLOUD_URL = "https://sonarcloud.io"
@@ -13,50 +48,124 @@ $SOLUTION = "./src/MonorepoDotnetProject/MonorepoDotnetProject.sln"
 $coverageReportDirectory = ".\TestResults"
 $coverageReportPath = "$coverageReportDirectory\dotCover.Output.html"
 $testReportPath = ".\**\*.trx"
+$mainBranchName = "main"
+$branchName = git rev-parse --abbrev-ref HEAD
 
-$SONAR_URL = $SONARCLOUD_URL
-$SONAR_TOKEN = $SONARCLOUD_TOKEN
+###
+### Process flags and parameters
+###
+$BR = $false
+
+if ($PR) {
+    [boolean]$doExit = $false
+    if ($prId -eq [string]::Empty) {
+        Write-Warning "Provide pull request ID with the '-prId' parameter"
+        $doExit = $true
+    }
+    if ($prBaseBranch -eq [string]::Empty) {
+        Write-Warning "Provide pull request target (base) branch with the '-prBaseBranch' parameter"
+        $doExit = $true
+    }
+    if ($doExit) {
+        Exit 1
+    }
+}
+else {
+    if ($mainBranchName -ne $branchName) {
+        Write-Host "Running branch analysis"
+        $BR = $true
+    }
+}
+
+
+if ($AnalyzeOnSonarCloud) {
+    $SONAR_URL = $SONARCLOUD_URL
+    $SONAR_TOKEN = $SONARCLOUD_TOKEN
+}
+else {
+    $SONAR_URL = $SONARQUBE_URL
+    $SONAR_TOKEN = $SONARQUBE_TOKEN
+}
 
 # .NET Analysis parameters
 $dotnetScannerParameterList = @(
-    "/o:lukas-frystak-sonarsource",
-    "/key:lukas-frystak-sonarsource_MonorepoExample_DotnetProject",
-    #"/key:MonorepoExample_DotnetProject",
-    #"/name:""Monorepo Example: .NET Project""",
-    "/v:1.0.0",
-    "/d:sonar.host.url=$SONAR_URL",
-    "/d:sonar.login=$SONAR_TOKEN",
-    "/d:sonar.cs.dotcover.reportsPaths=$coverageReportPath"
-    "/d:sonar.cs.vstest.reportsPaths=$testReportPath"
-    "/d:sonar.verbose=false"
-    #"/d:sonar.pullrequest.key=3",
-    #"/d:sonar.pullrequest.branch=lukas/test-pr",
-    #"/d:sonar.pullrequest.base=main"
-    #"/d:sonar.branch.name=lukas/test-pr"
+    [AnalysisParameter]::new("SC", "--", "/o:lukas-frystak-sonarsource")
+    [AnalysisParameter]::new("SC", "--", "/key:lukas-frystak-sonarsource_MonorepoExample_DotnetProject")
+    [AnalysisParameter]::new("SQ", "--", "/key:MonorepoExample_DotnetProject")
+    [AnalysisParameter]::new("SQ", "--", "/name:""Monorepo Example: .NET Project""")
+    [AnalysisParameter]::new("--", "--", "/d:sonar.host.url=$SONAR_URL")
+    [AnalysisParameter]::new("--", "--", "/d:sonar.login=$SONAR_TOKEN")
+    [AnalysisParameter]::new("--", "--", "/v:1.0.0")
+    [AnalysisParameter]::new("--", "--", "/d:sonar.cs.dotcover.reportsPaths=$coverageReportPath")
+    [AnalysisParameter]::new("--", "--", "/d:sonar.cs.vstest.reportsPaths=$testReportPath")
+    [AnalysisParameter]::new("--", "--", "/d:sonar.verbose=$AnalysisDebugLog")
+    [AnalysisParameter]::new("--", "BR", "/d:sonar.branch.name=$branchName")
+    [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.key=$prId")
+    [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.base=$prBaseBranch")
+    [AnalysisParameter]::new("--", "PR", "sonar.pullrequest.branch=$branchName")
 )
 
 # CLI Analysis parameters
 $cliScannerParameterList = @(
-    #"-D sonar.projectKey=MonorepoExample_PythonProject",
-    #"-D sonar.projectName=""Monorepo Example: Python Project""",
-    "-D sonar.organization=lukas-frystak-sonarsource",
-    "-D sonar.projectKey=lukas-frystak-sonarsource_MonorepoExample_PythonProject",
-    "-D sonar.projectVersion=1.0.0"
-    "-D sonar.host.url=$SONAR_URL",
-    "-D sonar.login=$SONAR_TOKEN",
-    "-D sonar.sources=./src",
-    "-D sonar.exclusions=./src/MonorepoDotnetProject/**/*",
-    "-D sonar.python.version=3"
-    #"-D sonar.pullrequest.key=3",
-    #"-D sonar.pullrequest.branch=lukas/test-pr",
-    #"-D sonar.pullrequest.base=main"
-    #"-D sonar.branch.name=lukas/test-pr"
+    [AnalysisParameter]::new("SQ", "--", "-D sonar.projectKey=MonorepoExample_PythonProject"),
+    [AnalysisParameter]::new("SQ", "--", "-D sonar.projectName=""Monorepo Example: Python Project"""),
+    [AnalysisParameter]::new("SC", "--", "-D sonar.organization=lukas-frystak-sonarsource"),
+    [AnalysisParameter]::new("SC", "--", "-D sonar.projectKey=lukas-frystak-sonarsource_MonorepoExample_PythonProject"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.projectVersion=1.0.0"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.host.url=$SONAR_URL"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.login=$SONAR_TOKEN"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.sources=./src"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.exclusions=./src/MonorepoDotnetProject/**/*"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.python.version=3"),
+    [AnalysisParameter]::new("--", "PR", "-D sonar.pullrequest.key=$prId")
+    [AnalysisParameter]::new("--", "PR", "-D sonar.pullrequest.branch=$branchName"),
+    [AnalysisParameter]::new("--", "PR", "-D sonar.pullrequest.base=$prBaseBranch"),
+    [AnalysisParameter]::new("--", "BR", "-D sonar.branch.name=$branchName")
 )
 
-#
-# Build and analyze the .NET project
-# .NET build + SonarScanner for .NET
-#
+# Filter the analysis parameters
+if ($AnalyzeOnSonarCloud){
+    # Exclude parameters related to SonarQube
+    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.PlatformType -ne "SQ"}
+    $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.PlatformType -ne "SQ"}
+}
+else{
+    # Exclude parameters related to SonarCloud
+    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.PlatformType -ne "SC"}
+    $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.PlatformType -ne "SC"}
+}
+
+# Main branch
+# BR
+# PR
+if($PR){
+    # Exclude only parameters related to Branch analysis
+    $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -ne "BR"}
+    $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -ne "BR"}
+}
+else {
+    if ($BR){
+        # Exclude only parameters related to Pull Request analysis
+        $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -ne "PR"}
+        $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -ne "PR"}
+    }
+    else{
+        # Exclude parameters related to branch analysis and pull request analysis
+        # I.e., use only the generic parameters
+        $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -eq "--"}
+        $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -eq "--"}
+    }
+}
+
+Write-Warning ".NET Paramerters"
+$dotnetScannerParameterList | Format-Table 
+Write-Warning ".CLI Paramerters"
+$cliScannerParameterList | Format-Table 
+Exit
+
+###
+### Build and analyze the projects
+###
 
 # Prepare .NET analysis
 $dotnetScannerParameters = [string]::Join(' ', $dotnetScannerParameterList)
@@ -71,10 +180,7 @@ dotnet dotcover test $solution --no-build --configuration Release --dcReportType
 # Run .NET analysis
 dotnet sonarscanner end /d:sonar.login=$SONAR_TOKEN
 
-#
-# Analyze the Python project
-# SonarScanner CLI
-#
+# Analyze the Python project - SonarScanner CLI
 $cliScannerParameters = [string]::Join(' ', $cliScannerParameterList)
 $cliScannerCmd = "sonar-scanner $cliScannerParameters"
 Invoke-Expression $cliScannerCmd
