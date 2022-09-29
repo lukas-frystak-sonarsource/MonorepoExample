@@ -58,6 +58,7 @@ $BR = $false
 
 if ($PR) {
     [boolean]$doExit = $false
+
     if ($prId -eq [string]::Empty) {
         Write-Warning "Provide pull request ID with the '-prId' parameter"
         $doExit = $true
@@ -76,7 +77,6 @@ else {
         $BR = $true
     }
 }
-
 
 if ($AnalyzeOnSonarCloud) {
     $SONAR_URL = $SONARCLOUD_URL
@@ -135,9 +135,6 @@ else{
     $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.PlatformType -ne "SC"}
 }
 
-# Main branch
-# BR
-# PR
 if($PR){
     # Exclude only parameters related to Branch analysis
     $dotnetScannerParameterList = $dotnetScannerParameterList | Where-Object {$_.AnalysisType -ne "BR"}
@@ -156,12 +153,6 @@ else {
         $cliScannerParameterList = $cliScannerParameterList | Where-Object {$_.AnalysisType -eq "--"}
     }
 }
-
-Write-Warning ".NET Paramerters"
-$dotnetScannerParameterList | Format-Table 
-Write-Warning ".CLI Paramerters"
-$cliScannerParameterList | Format-Table 
-Exit
 
 ###
 ### Build and analyze the projects
