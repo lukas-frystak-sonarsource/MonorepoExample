@@ -109,7 +109,7 @@ $dotnetScannerParameterList = @(
     [AnalysisParameter]::new("--", "BR", "/d:sonar.branch.name=$branchName")
     [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.key=$prId")
     [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.base=$prBaseBranch")
-    [AnalysisParameter]::new("--", "PR", "sonar.pullrequest.branch=$branchName")
+    [AnalysisParameter]::new("--", "PR", "/d:sonar.pullrequest.branch=$branchName")
 )
 
 # CLI Analysis parameters
