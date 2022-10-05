@@ -186,5 +186,6 @@ if ($AnalysisDebugLog){
     $cliScannerParameters = "$cliScannerParameters -X"
 }
 
+# Run CLI analysis
 $cliScannerCmd = "sonar-scanner $cliScannerParameters"
 Invoke-Expression $cliScannerCmd
