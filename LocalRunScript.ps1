@@ -122,7 +122,7 @@ $cliScannerParameterList = @(
     [AnalysisParameter]::new("--", "--", "-D sonar.host.url=$SONAR_URL"),
     [AnalysisParameter]::new("--", "--", "-D sonar.login=$SONAR_TOKEN"),
     [AnalysisParameter]::new("--", "--", "-D sonar.sources=./src"),
-    [AnalysisParameter]::new("--", "--", "-D sonar.exclusions=./src/MonorepoDotnetProject/**/*"),
+    [AnalysisParameter]::new("--", "--", "-D sonar.exclusions=src/MonorepoDotnetProject/**/*"),
     [AnalysisParameter]::new("--", "--", "-D sonar.python.version=3"),
     [AnalysisParameter]::new("--", "PR", "-D sonar.pullrequest.key=$prId")
     [AnalysisParameter]::new("--", "PR", "-D sonar.pullrequest.branch=$branchName"),
@@ -176,7 +176,7 @@ dotnet dotcover test $SOLUTION --no-build --configuration Release --dcReportType
 
 
 # Run .NET analysis
-dotnet sonarscanner end /d:sonar.login=$SONAR_TOKEN
+dotnet sonarscanner end /d:sonar.login=$SONAR_TOKEN 3>&1 2>&1 > dotnet-analysis.log
 
 # Analyze the Python project - SonarScanner CLI
 $cliScannerParameters = [string]::Join(' ', $($cliScannerParameterList).Value)
@@ -188,4 +188,4 @@ if ($AnalysisDebugLog){
 
 # Run CLI analysis
 $cliScannerCmd = "sonar-scanner $cliScannerParameters"
-Invoke-Expression $cliScannerCmd
+Invoke-Expression $cliScannerCmd  3>&1 2>&1 > cli-analysis.log
